@@ -3,8 +3,9 @@ const propertiesReader = require('properties-reader')
 const fs = require('fs')
 const path = require('path')
 
-const downloadPath = path.join(__dirname, `downloads`)
 const properties = propertiesReader(path.join(__dirname, `credentials.properties`))
+const downloadPage = properties.get(`downloadPage`)
+const savePath = path.join(__dirname, `downloads`, path.basename(downloadPage))
 
 main()
 
@@ -17,7 +18,7 @@ async function main() {
 }
 
 async function downloadAllFiles(page) {
-    await page.goto(properties.get(`downloadPage`))
+    await page.goto(downloadPage)
     let links = page.locator('a:visible')
     let count = await links.count()
     for (let i = 0; i < count; i++) {
@@ -29,7 +30,7 @@ async function downloadAllFiles(page) {
 }
 
 async function download(text, page) {
-    let saveLocation = path.join(downloadPath, text)
+    let saveLocation = path.join(savePath, text)
     if (fs.existsSync(saveLocation)) {
         console.log(`File was already downloaded: ${text}`)
     } else {
@@ -37,14 +38,15 @@ async function download(text, page) {
             page.waitForEvent('download'),
             page.locator(`text=${text}`).click(),
         ])
-        console.log(`Download complete - saving to ${saveLocation}`)
+        console.log(`Waiting to complete download: ${text}`)
         await download.saveAs(saveLocation)
+        console.log(`Download complete - saved to ${saveLocation}`)
     }
 }
 
 async function init(driver) {
     let browser = await playwright[driver].launch({
-        headless: false
+        headless: true
     })
     return browser
 }
