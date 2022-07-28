@@ -18,19 +18,27 @@ async function main() {
 
 async function downloadAllFiles(page) {
     await page.goto(properties.get(`downloadPage`))
-    const links = page.locator('a:visible')
-    const linksCount = await links.count()
-    for (let i = 0; i < linksCount; i++) {
+    let links = page.locator('a:visible')
+    let count = await links.count()
+    for (let i = 0; i < count; i++) {
         let text = await links.nth(i).innerText()
-        //let href = await links.nth(i).getAttribute('href')
         if (text.endsWith(properties.get(`fileExtension`))) {
-            const [download] = await Promise.all([
-                page.waitForEvent('download'),
-                page.locator(`text=${text}`).click(),
-            ])
-            console.log(`Download complete - saving to `)
-            await download.saveAs(path.join(downloadPath, text))
+            await download(text, page)
         }
+    }
+}
+
+async function download(text, page) {
+    let saveLocation = path.join(downloadPath, text)
+    if (fs.existsSync(saveLocation)) {
+        console.log(`File was already downloaded: ${text}`)
+    } else {
+        const [download] = await Promise.all([
+            page.waitForEvent('download'),
+            page.locator(`text=${text}`).click(),
+        ])
+        console.log(`Download complete - saving to ${saveLocation}`)
+        await download.saveAs(saveLocation)
     }
 }
 
