@@ -1,0 +1,24 @@
+{
+  "name": "r-roms",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Link-AM/r-roms.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Link-AM/r-roms/issues"
+  },
+  "homepage": "https://github.com/Link-AM/r-roms#readme",
+  "dependencies": {
+    "playwright": "^1.24.1",
+    "properties-reader": "^2.2.0"
+  }
+}
