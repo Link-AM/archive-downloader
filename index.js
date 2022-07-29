@@ -4,6 +4,13 @@ const playwright = require('playwright')
 const propReader = require('properties-reader')
 const props = propReader(getPropFile()).getAllProperties()
 
+var results = {
+    Success: 0,
+    Failed: 0,
+    Skipped: 0,
+    Preexisted:0
+}
+
 main()
 
 async function main() {
@@ -12,53 +19,69 @@ async function main() {
     await login(page)
     await downloadAllFiles(page)
     await browser.close()
+    console.log(results)
 }
 
 async function downloadAllFiles(page) {
     await page.goto(props.downloadPageUrl)
+    let folderName = path.basename(props.downloadPageUrl)
+    let folderPath = path.join(__dirname, `downloads`, folderName)
     let links = page.locator('a:visible')
     let count = await links.count()
     for (let i = 0; i < count; i++) {
-        let text = await links.nth(i).innerText()
-        if (verifyAllConditions(text)) {
-            try {
-                await download(text, page)
-            } catch (err) {
-                console.log(err)
-            } 
+        let link = await links.nth(i).innerText()
+        if (allConditionsMet(link)) {
+            await downloadIfNonexistent(link, page, folderPath)
         }
     }
+    console.log(`All files evaluated.  Save location: ${folderPath}`)
 }
 
-async function download(text, page) {
-    let folderName = path.basename(props.downloadPageUrl)
-    let saveFile = path.join(__dirname, `downloads`, folderName, text)
+async function downloadIfNonexistent(link, page, folderPath) {
+    let saveFile = path.join(folderPath, link)
     if (fs.existsSync(saveFile)) {
-        console.log(`Skipping file already downloaded: '${text}'`)
+        console.log(`File already exists in the save location\t\t\t${link}`)
+        results.Preexisted++
     } else {
-        try {
-            let [download] = await Promise.all([
-                page.waitForEvent('download'),
-                page.locator(`text=${text}`).click(),
-            ])
-            console.log(`Download started for file '${text}' - Please wait... `)
-            await download.saveAs(saveFile)
-            console.log(`\t Download complete - saved to '${saveFile}'`)
-        } catch (err) {
-            console.error(`ERROR - Could not download file ${text}: ${err}` )
-        }
+        attemptToDownload(link, page, saveFile)
     }
 }
 
-function verifyAllConditions(text) {
+async function attemptToDownload(link, page, saveFile) {
+    try {
+        let [download] = await Promise.all([
+            page.waitForEvent('download'),
+            page.locator(`text=${link}`).click(),
+        ])
+        console.log(`Download started for file. Please wait...\t\t${link}`)
+        await download.saveAs(saveFile)
+        console.log(`\t Download complete`)
+        results.Success++
+    } catch (err) {
+        console.error(`ERROR - Could not download file\t\t${link}'\n${err}` )
+        results.Failed++
+    }
+}
+
+function allConditionsMet(text) {
+    if (props.fileExtension.length > 0) {
+        if (!text.endsWith(props.fileExtension)) {
+            return false
+        }
+    }
     if (props.includeText.length > 0) {
-        if (!text.includes(props.includeText)) return false
+        if (!text.includes(props.includeText)) {
+            console.log(`File skipped because it does not contain '${props.includeText}'\t\t${text}`)
+            results.Skipped++
+            return false
+        }
     }
     if (props.excludeText.length > 0) {
-        if (text.includes(props.excludeText)) return false
-    }
-    if (props.fileExtension.length > 0) {
-        if (!text.endsWith(props.fileExtension)) return false
+        if (text.includes(props.excludeText)) {
+            console.log(`File skipped because it contains '${props.excludeText}'\t\t\t\t${text}`)
+            results.Skipped++
+            return false
+        }
     }
     return true
 }
