@@ -1,11 +1,8 @@
-const playwright = require('playwright')
-const propertiesReader = require('properties-reader')
 const fs = require('fs')
 const path = require('path')
-
-const properties = propertiesReader(path.join(__dirname, `credentials.properties`))
-const downloadPage = properties.get(`downloadPage`)
-const savePath = path.join(__dirname, `downloads`, path.basename(downloadPage))
+const playwright = require('playwright')
+const propReader = require('properties-reader')
+const props = propReader(getPropFile()).getAllProperties()
 
 main()
 
@@ -18,12 +15,12 @@ async function main() {
 }
 
 async function downloadAllFiles(page) {
-    await page.goto(downloadPage)
+    await page.goto(props.downloadPageUrl)
     let links = page.locator('a:visible')
     let count = await links.count()
     for (let i = 0; i < count; i++) {
         let text = await links.nth(i).innerText()
-        if (text.endsWith(properties.get(`fileExtension`))) {
+        if (verifyAllConditions(text)) {
             try {
                 await download(text, page)
             } catch (err) {
@@ -34,8 +31,8 @@ async function downloadAllFiles(page) {
 }
 
 async function download(text, page) {
-    let saveLocation = path.join(savePath, text)
-    if (fs.existsSync(saveLocation)) {
+    let saveFile = path.join(__dirname, `downloads`, path.basename(props.downloadPageUrl), text)
+    if (fs.existsSync(saveFile)) {
         console.log(`Skipping file already downloaded: '${text}'`)
     } else {
         try {
@@ -44,12 +41,36 @@ async function download(text, page) {
                 page.locator(`text=${text}`).click(),
             ])
             console.log(`Download started for file '${text}' - Please wait... `)
-            await download.saveAs(saveLocation)
-            console.log(`\t Download complete - saved to '${saveLocation}'`)
+            await download.saveAs(saveFile)
+            console.log(`\t Download complete - saved to '${saveFile}'`)
         } catch (err) {
             console.error(`ERROR - Could not download file ${text}: ${err}` )
         }
     }
+}
+
+function verifyAllConditions(text) {
+    if (hasValue(props.includeText)) {
+        if (!text.includes(props.includeText)) {
+            return false
+        }
+    } 
+    if (hasValue(props.excludeText)) {
+        if (text.includes(props.excludeText)) {
+            return false
+        }
+    } 
+    if (hasValue(props.fileExtension)) {
+        if (!text.endsWith(props.fileExtension)) {
+            return false
+        }
+    }
+    return true
+}
+
+function hasValue(str) {
+    if (str.length > 0) return true
+    else return false
 }
 
 async function init(driver) {
@@ -65,10 +86,17 @@ async function newPage(browser) {
     return page
 }
 
+function getPropFile() {
+    let criteria = path.join(__dirname, `criteria.properties`)
+    let personal = path.join(__dirname, `personal.properties`)
+    let propFile = fs.existsSync(personal) ? personal : criteria
+    return propFile
+}
+
 async function login(page) {
     await page.goto(`https://archive.org/account/login`)
-    await page.locator('input[name="username"]').fill(properties.get(`username`))
-    await page.locator('input[name="password"]').fill(properties.get(`password`))
+    await page.locator('input[name="username"]').fill(props.username)
+    await page.locator('input[name="password"]').fill(props.password)
     await page.locator('input[name="submit-to-login"]').click()
     await page.waitForURL('https://archive.org/')
 }
