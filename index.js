@@ -31,7 +31,8 @@ async function downloadAllFiles(page) {
 }
 
 async function download(text, page) {
-    let saveFile = path.join(__dirname, `downloads`, path.basename(props.downloadPageUrl), text)
+    let folderName = path.basename(props.downloadPageUrl)
+    let saveFile = path.join(__dirname, `downloads`, folderName, text)
     if (fs.existsSync(saveFile)) {
         console.log(`Skipping file already downloaded: '${text}'`)
     } else {
@@ -50,27 +51,16 @@ async function download(text, page) {
 }
 
 function verifyAllConditions(text) {
-    if (hasValue(props.includeText)) {
-        if (!text.includes(props.includeText)) {
-            return false
-        }
-    } 
-    if (hasValue(props.excludeText)) {
-        if (text.includes(props.excludeText)) {
-            return false
-        }
-    } 
-    if (hasValue(props.fileExtension)) {
-        if (!text.endsWith(props.fileExtension)) {
-            return false
-        }
+    if (props.includeText.length > 0) {
+        if (!text.includes(props.includeText)) return false
+    }
+    if (props.excludeText.length > 0) {
+        if (text.includes(props.excludeText)) return false
+    }
+    if (props.fileExtension.length > 0) {
+        if (!text.endsWith(props.fileExtension)) return false
     }
     return true
-}
-
-function hasValue(str) {
-    if (str.length > 0) return true
-    else return false
 }
 
 async function init(driver) {
