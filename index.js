@@ -24,7 +24,11 @@ async function downloadAllFiles(page) {
     for (let i = 0; i < count; i++) {
         let text = await links.nth(i).innerText()
         if (text.endsWith(properties.get(`fileExtension`))) {
-            await download(text, page)
+            try {
+                await download(text, page)
+            } catch (err) {
+                console.log(err)
+            } 
         }
     }
 }
@@ -32,21 +36,25 @@ async function downloadAllFiles(page) {
 async function download(text, page) {
     let saveLocation = path.join(savePath, text)
     if (fs.existsSync(saveLocation)) {
-        console.log(`File was already downloaded: ${text}`)
+        console.log(`Skipping file already downloaded: '${text}'`)
     } else {
-        const [download] = await Promise.all([
-            page.waitForEvent('download'),
-            page.locator(`text=${text}`).click(),
-        ])
-        console.log(`Waiting to complete download: ${text}`)
-        await download.saveAs(saveLocation)
-        console.log(`Download complete - saved to ${saveLocation}`)
+        try {
+            let [download] = await Promise.all([
+                page.waitForEvent('download'),
+                page.locator(`text=${text}`).click(),
+            ])
+            console.log(`Download started for file '${text}' - Please wait... `)
+            await download.saveAs(saveLocation)
+            console.log(`\t Download complete - saved to '${saveLocation}'`)
+        } catch (err) {
+            console.error(`ERROR - Could not download file ${text}: ${err}` )
+        }
     }
 }
 
 async function init(driver) {
     let browser = await playwright[driver].launch({
-        headless: true
+        headless: false
     })
     return browser
 }
