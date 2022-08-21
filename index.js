@@ -70,20 +70,44 @@ function allConditionsMet(text) {
         }
     }
     if (props.includeText.length > 0) {
-        if (!text.includes(props.includeText)) {
+        if (testIncludesCondition(text) == `Fail`) {
             console.log(`File skipped because it does not contain '${props.includeText}'\t\t${text}`)
             results.Skipped++
             return false
         }
     }
     if (props.excludeText.length > 0) {
-        if (text.includes(props.excludeText)) {
+        if (testExcludesCondition(text) == `Fail`) {
             console.log(`File skipped because it contains '${props.excludeText}'\t\t\t\t${text}`)
             results.Skipped++
             return false
         }
     }
     return true
+}
+
+function testIncludesCondition(text) {
+    let result = `Fail`
+    let arr = props.includeText.toString().split(`|`)
+    for (let x = 0; x < arr.length; x++) {
+        if (text.includes(arr[x])) {
+            result = `Pass`
+            break
+        }
+    }
+    return result
+}
+
+function testExcludesCondition(text) {
+    let result = `Pass`
+    let arr = props.excludeText.toString().split(`|`)
+    for (let x = 0; x < arr.length; x++) {
+        if (text.includes(arr[x])) {
+            result = `Fail`
+            break
+        }
+    }
+    return result
 }
 
 async function init(driver) {
