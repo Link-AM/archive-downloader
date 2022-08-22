@@ -43,7 +43,7 @@ async function downloadIfNonexistent(link, page, folderPath) {
         console.log(`File already exists in the save location\t\t\t${link}`)
         results.Preexisted++
     } else {
-        attemptToDownload(link, page, saveFile)
+        await attemptToDownload(link, page, saveFile)
     }
 }
 
@@ -51,7 +51,7 @@ async function attemptToDownload(link, page, saveFile) {
     try {
         let [download] = await Promise.all([
             page.waitForEvent('download'),
-            page.locator(`text=${link}`).click(),
+            page.locator(`text="${link}"`).click(),
         ])
         console.log(`Download started for file. Please wait...\t\t${link}`)
         await download.saveAs(saveFile)
