@@ -4,6 +4,9 @@ const playwright = require('playwright')
 const propReader = require('properties-reader')
 const props = propReader(getPropFile()).getAllProperties()
 
+const folderName = path.basename(props.downloadPageUrl)
+const downloadPath = path.join(__dirname, `downloads`, folderName)
+
 var results = {
     Success: 0,
     Failed: 0,
@@ -24,37 +27,25 @@ async function main() {
 
 async function downloadAllFiles(page) {
     await page.goto(props.downloadPageUrl)
-    let folderName = path.basename(props.downloadPageUrl)
-    let folderPath = path.join(__dirname, `downloads`, folderName)
     let links = page.locator('a:visible')
     let count = await links.count()
     for (let i = 0; i < count; i++) {
         let link = await links.nth(i).innerText()
         if (allConditionsMet(link)) {
-            await downloadIfNonexistent(link, page, folderPath)
+            await download(link, page)
         }
     }
-    console.log(`All files evaluated.  Save location: ${folderPath}`)
+    console.log(`All files evaluated.  Save location: ${downloadPath}`)
 }
 
-async function downloadIfNonexistent(link, page, folderPath) {
-    let saveFile = path.join(folderPath, link)
-    if (fs.existsSync(saveFile)) {
-        console.log(`File already exists in the save location\t\t\t${link}`)
-        results.Preexisted++
-    } else {
-        await attemptToDownload(link, page, saveFile)
-    }
-}
-
-async function attemptToDownload(link, page, saveFile) {
+async function download(link, page) {
     try {
+        console.log(`Downloading file. Please wait...\t\t${link}`)
         let [download] = await Promise.all([
             page.waitForEvent('download'),
             page.locator(`text="${link}"`).click(),
         ])
-        console.log(`Download started for file. Please wait...\t\t${link}`)
-        await download.saveAs(saveFile)
+        await download.saveAs(path.join(downloadPath, link))
         console.log(`\t Download complete`)
         results.Success++
     } catch (err) {
@@ -82,6 +73,11 @@ function allConditionsMet(text) {
             results.Skipped++
             return false
         }
+    }
+    if (fs.existsSync(path.join(downloadPath, text))) {
+        console.log(`File already exists in the save location\t\t\t${text}`)
+        results.Preexisted++
+        return false
     }
     return true
 }
