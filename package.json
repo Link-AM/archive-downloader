@@ -1,5 +1,5 @@
 {
-  "name": "r-roms",
+  "name": "archive-downloader",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -8,17 +8,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Link-AM/r-roms.git"
+    "url": "git+https://github.com/Link-AM/archive-downloader.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Link-AM/r-roms/issues"
+    "url": "https://github.com/Link-AM/archive-downloader/issues"
   },
-  "homepage": "https://github.com/Link-AM/r-roms#readme",
+  "homepage": "https://github.com/Link-AM/archive-downloader#readme",
   "dependencies": {
-    "playwright": "^1.24.1",
+    "playwright": "^1.25.1",
     "properties-reader": "^2.2.0"
   }
 }
