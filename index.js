@@ -19,7 +19,6 @@ main()
 async function main() {
     let browser = await init(`chromium`)
     let page = await newPage(browser)
-    await login(page)
     await downloadAllFiles(page)
     await browser.close()
     console.log(results)
@@ -50,7 +49,7 @@ async function download(link, page) {
         results.Success++
     } catch (err) {
         console.error(`ERROR - Could not download file\t\t${link}'\n${err}` )
-        results.Failed++
+        results.Failed++        
     }
 }
 
@@ -124,12 +123,4 @@ function getPropFile() {
     let personal = path.join(__dirname, `personal.properties`)
     let propFile = fs.existsSync(personal) ? personal : criteria
     return propFile
-}
-
-async function login(page) {
-    await page.goto(`https://archive.org/account/login`)
-    await page.locator('input[name="username"]').fill(props.username)
-    await page.locator('input[name="password"]').fill(props.password)
-    await page.locator('input[name="submit-to-login"]').click()
-    await page.waitForURL('https://archive.org/')
 }
